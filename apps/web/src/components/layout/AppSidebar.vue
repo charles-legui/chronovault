@@ -1,66 +1,96 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
-import type { NavItem } from '@/types'
+import { useRoute, useRouter } from 'vue-router'
+import { useUiStore } from '@/stores/ui'
+import AppIcon from '@/components/ui/AppIcon.vue'
 
-const route = useRoute()
+const route  = useRoute()
+const router = useRouter()
+const ui     = useUiStore()
 
-const navItems: NavItem[] = [
-  { label: 'Dashboard', to: '/', icon: 'grid' },
-  { label: 'Albums', to: '/albums', icon: 'images' },
-  { label: 'Favoris', to: '/favorites', icon: 'heart' },
-  { label: 'Upload', to: '/upload', icon: 'upload-cloud' },
+const navMain = [
+  { label: 'Dashboard', to: '/',        icon: 'dashboard' },
+  { label: 'Albums',    to: '/albums',  icon: 'albums'    },
+  { label: 'Favoris',   to: '/favorites', icon: 'heart'   },
+  { label: 'Upload',    to: '/upload',  icon: 'upload'    },
+]
+
+const navSecondary = [
   { label: 'Paramètres', to: '/settings', icon: 'settings' },
 ]
 
 function isActive(to: string) {
-  if (to === '/') return route.path === '/'
-  return route.path.startsWith(to)
+  return to === '/' ? route.path === '/' : route.path.startsWith(to)
 }
 
-// Simple SVG icon map
-const icons: Record<string, string> = {
-  grid: `<path d="M3 3h7v7H3V3zm11 0h7v7h-7V3zM3 14h7v7H3v-7zm11 0h7v7h-7v-7z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/>`,
-  images: `<rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="m21 15-5-5L5 21" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/>`,
-  heart: `<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" stroke-width="1.5" fill="none"/>`,
-  'upload-cloud': `<polyline points="16 16 12 12 8 16" stroke="currentColor" stroke-width="1.5" fill="none"/><line x1="12" y1="12" x2="12" y2="21" stroke="currentColor" stroke-width="1.5"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" stroke="currentColor" stroke-width="1.5" fill="none"/>`,
-  settings: `<circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="1.5" fill="none"/>`,
+function navigate(to: string) {
+  router.push(to)
+  ui.closeMobileSidebar()
 }
-
-const activeClass = computed(() => '')
 </script>
 
 <template>
   <aside class="sidebar">
     <!-- Logo -->
     <div class="sidebar-logo">
-      <div class="logo-icon">CV</div>
-      <span class="logo-label">ChronoVault</span>
+      <div class="logo-mark">
+        <span>CV</span>
+      </div>
+      <span class="logo-name">ChronoVault</span>
     </div>
 
-    <!-- Navigation -->
-    <nav class="sidebar-nav">
-      <RouterLink
-        v-for="item in navItems"
+    <!-- Nav main -->
+    <nav class="sidebar-nav" aria-label="Navigation principale">
+      <p class="nav-group-label">Menu</p>
+
+      <button
+        v-for="item in navMain"
         :key="item.to"
-        :to="item.to"
+        type="button"
         class="nav-item"
         :class="{ 'nav-item--active': isActive(item.to) }"
+        :aria-current="isActive(item.to) ? 'page' : undefined"
+        @click="navigate(item.to)"
       >
-        <span class="nav-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="20" height="20" v-html="icons[item.icon]" />
+        <span class="nav-item-icon">
+          <AppIcon :name="item.icon" :size="18" />
         </span>
-        <span>{{ item.label }}</span>
-      </RouterLink>
+        <span class="nav-item-label">{{ item.label }}</span>
+
+        <!-- Active indicator bar -->
+        <span v-if="isActive(item.to)" class="nav-active-bar" aria-hidden="true" />
+      </button>
     </nav>
 
-    <!-- Bottom user section -->
-    <div class="sidebar-footer">
-      <div class="user-avatar">JD</div>
+    <!-- Spacer -->
+    <div class="flex-1" />
+
+    <!-- Nav secondary -->
+    <nav class="sidebar-nav-secondary" aria-label="Navigation secondaire">
+      <button
+        v-for="item in navSecondary"
+        :key="item.to"
+        type="button"
+        class="nav-item"
+        :class="{ 'nav-item--active': isActive(item.to) }"
+        @click="navigate(item.to)"
+      >
+        <span class="nav-item-icon">
+          <AppIcon :name="item.icon" :size="18" />
+        </span>
+        <span class="nav-item-label">{{ item.label }}</span>
+      </button>
+    </nav>
+
+    <!-- User footer -->
+    <div class="sidebar-user">
+      <div class="user-avatar" aria-hidden="true">JD</div>
       <div class="user-info">
         <p class="user-name">Jean Dupont</p>
-        <p class="user-email">jean@example.com</p>
+        <p class="user-role">Administrateur</p>
       </div>
+      <button type="button" class="user-logout" title="Se déconnecter" aria-label="Se déconnecter">
+        <AppIcon name="logout" :size="16" />
+      </button>
     </div>
   </aside>
 </template>
@@ -75,57 +105,89 @@ const activeClass = computed(() => '')
   flex-shrink: 0;
   position: sticky;
   top: 0;
+  overflow: hidden;
 }
 
+/* Logo */
 .sidebar-logo {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-6) var(--space-5);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-}
-
-.logo-icon {
-  width: 36px;
-  height: 36px;
-  background: var(--color-primary);
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--font-size-sm);
-  font-weight: 700;
-  color: white;
+  padding: var(--space-5) var(--space-5) var(--space-4);
+  border-bottom: 1px solid var(--color-sidebar-border);
   flex-shrink: 0;
 }
 
-.logo-label {
-  font-size: var(--font-size-base);
-  font-weight: 600;
-  color: white;
-  letter-spacing: -0.01em;
+.logo-mark {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--indigo-500), var(--indigo-700));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
 }
 
+.logo-mark span {
+  font-size: 11px;
+  font-weight: var(--font-bold);
+  color: white;
+  letter-spacing: var(--tracking-wide);
+}
+
+.logo-name {
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: white;
+  letter-spacing: var(--tracking-tight);
+}
+
+/* Nav */
 .sidebar-nav {
-  flex: 1;
-  padding: var(--space-4) var(--space-3);
+  padding: var(--space-5) var(--space-3) var(--space-2);
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.sidebar-nav-secondary {
+  padding: var(--space-2) var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex-shrink: 0;
+  border-top: 1px solid var(--color-sidebar-border);
+}
+
+.nav-group-label {
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--color-sidebar-text-dim);
+  padding: 0 var(--space-3);
+  margin-bottom: var(--space-2);
 }
 
 .nav-item {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-3);
-  border-radius: var(--radius-md);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
   color: var(--color-sidebar-text);
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  transition: background-color 0.15s, color 0.15s;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  text-align: left;
+  background: none;
+  border: none;
   cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
 .nav-item:hover {
@@ -134,68 +196,108 @@ const activeClass = computed(() => '')
 }
 
 .nav-item--active {
-  background-color: rgba(99, 102, 241, 0.15);
+  background-color: var(--color-sidebar-active-bg);
   color: white;
 }
 
-.nav-item--active .nav-icon {
-  color: var(--color-sidebar-active);
-}
-
-.nav-icon {
+.nav-item-icon {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  opacity: 0.8;
+  width: 20px;
+  color: var(--color-sidebar-text-dim);
+  transition: color var(--transition-fast);
 }
 
-.nav-item--active .nav-icon {
-  opacity: 1;
+.nav-item:hover .nav-item-icon,
+.nav-item--active .nav-item-icon {
+  color: var(--color-sidebar-active);
 }
 
-.sidebar-footer {
-  padding: var(--space-4) var(--space-5);
-  border-top: 1px solid rgba(255, 255, 255, 0.07);
+.nav-item-label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-active-bar {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 18px;
+  background: var(--color-sidebar-active);
+  border-radius: var(--radius-full) 0 0 var(--radius-full);
+}
+
+/* User footer */
+.sidebar-user {
   display: flex;
   align-items: center;
   gap: var(--space-3);
+  padding: var(--space-4) var(--space-4);
+  border-top: 1px solid var(--color-sidebar-border);
+  flex-shrink: 0;
 }
 
 .user-avatar {
-  width: 34px;
-  height: 34px;
-  background: var(--color-primary);
+  width: 32px;
+  height: 32px;
   border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--indigo-500), var(--indigo-700));
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--font-size-xs);
-  font-weight: 700;
+  font-size: var(--text-xs);
+  font-weight: var(--font-bold);
   color: white;
   flex-shrink: 0;
 }
 
 .user-info {
+  flex: 1;
   overflow: hidden;
 }
 
 .user-name {
-  margin: 0;
-  font-size: var(--font-size-sm);
-  font-weight: 500;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
   color: white;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: var(--leading-tight);
 }
 
-.user-email {
-  margin: 0;
-  font-size: var(--font-size-xs);
-  color: var(--color-muted);
+.user-role {
+  font-size: var(--text-xs);
+  color: var(--color-sidebar-text-dim);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+.user-logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md);
+  color: var(--color-sidebar-text-dim);
+  background: none;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.user-logout:hover {
+  background-color: var(--color-sidebar-hover);
+  color: var(--color-error);
 }
 </style>

@@ -1,49 +1,120 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useUiStore } from '@/stores/ui'
+import AppIcon from '@/components/ui/AppIcon.vue'
 
-const ui = useUiStore()
-const localSearch = ref(ui.searchQuery)
+const ui            = useUiStore()
+const localSearch   = ref(ui.searchQuery)
+const profileOpen   = ref(false)
+const profileRef    = ref<HTMLElement | null>(null)
 
 function onSearch() {
   ui.setSearch(localSearch.value)
 }
+
+function toggleProfile() {
+  profileOpen.value = !profileOpen.value
+}
+
+function closeProfile() {
+  profileOpen.value = false
+}
+
+// Close profile dropdown on outside click
+function onClickOutside(e: MouseEvent) {
+  if (profileRef.value && !profileRef.value.contains(e.target as Node)) {
+    profileOpen.value = false
+  }
+}
+
+onMounted(()  => document.addEventListener('mousedown', onClickOutside))
+onUnmounted(() => document.removeEventListener('mousedown', onClickOutside))
 </script>
 
 <template>
   <header class="topbar">
+
+    <!-- Mobile menu toggle -->
+    <button
+      type="button"
+      class="mobile-menu-btn"
+      aria-label="Ouvrir le menu"
+      @click="ui.openMobileSidebar()"
+    >
+      <AppIcon name="menu" :size="20" />
+    </button>
+
     <!-- Search -->
     <div class="topbar-search">
-      <span class="search-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5">
-          <circle cx="11" cy="11" r="8" />
-          <path d="m21 21-4.35-4.35" stroke-linecap="round" />
-        </svg>
+      <span class="search-icon">
+        <AppIcon name="search" :size="16" />
       </span>
       <input
         v-model="localSearch"
         type="search"
         placeholder="Rechercher des albums, médias…"
         class="search-input"
+        aria-label="Rechercher"
         @input="onSearch"
       />
+      <kbd class="search-shortcut" aria-hidden="true">⌘K</kbd>
     </div>
 
-    <!-- Actions -->
+    <!-- Right actions -->
     <div class="topbar-actions">
-      <button class="btn-add" type="button" title="Ajouter">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 5v14M5 12h14" stroke-linecap="round" />
-        </svg>
+
+      <!-- Add button -->
+      <button type="button" class="btn-primary" aria-label="Nouvel album">
+        <AppIcon name="plus" :size="16" />
         <span>Nouveau</span>
       </button>
 
-      <button class="icon-btn" type="button" title="Notifications">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-        </svg>
+      <!-- Notifications -->
+      <button type="button" class="icon-btn" aria-label="Notifications">
+        <span class="notif-dot" aria-hidden="true" />
+        <AppIcon name="bell" :size="18" />
       </button>
+
+      <!-- Profile dropdown -->
+      <div ref="profileRef" class="profile-wrapper">
+        <button
+          type="button"
+          class="profile-trigger"
+          :aria-expanded="profileOpen"
+          aria-haspopup="menu"
+          @click="toggleProfile"
+        >
+          <div class="profile-avatar" aria-hidden="true">JD</div>
+          <span class="profile-name">Jean Dupont</span>
+          <span class="profile-chevron" :class="{ 'profile-chevron--open': profileOpen }">
+            <AppIcon name="chevron-down" :size="14" />
+          </span>
+        </button>
+
+        <!-- Dropdown menu -->
+        <Transition name="dropdown">
+          <div v-if="profileOpen" class="profile-dropdown" role="menu">
+            <div class="dropdown-header">
+              <p class="dropdown-user-name">Jean Dupont</p>
+              <p class="dropdown-user-email">jean@example.com</p>
+            </div>
+            <div class="dropdown-divider" />
+            <button type="button" class="dropdown-item" role="menuitem" @click="closeProfile">
+              <AppIcon name="user" :size="15" />
+              <span>Mon profil</span>
+            </button>
+            <button type="button" class="dropdown-item" role="menuitem" @click="closeProfile">
+              <AppIcon name="settings" :size="15" />
+              <span>Paramètres</span>
+            </button>
+            <div class="dropdown-divider" />
+            <button type="button" class="dropdown-item dropdown-item--danger" role="menuitem" @click="closeProfile">
+              <AppIcon name="logout" :size="15" />
+              <span>Se déconnecter</span>
+            </button>
+          </div>
+        </Transition>
+      </div>
     </div>
   </header>
 </template>
@@ -55,18 +126,36 @@ function onSearch() {
   border-bottom: 1px solid var(--color-border);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 var(--space-6);
   gap: var(--space-4);
+  padding: 0 var(--space-6);
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: var(--z-sticky);
+  flex-shrink: 0;
 }
 
+/* Mobile toggle — hidden on desktop */
+.mobile-menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+  transition: background-color var(--transition-fast);
+}
+
+.mobile-menu-btn:hover {
+  background-color: var(--color-surface-overlay);
+}
+
+/* Search */
 .topbar-search {
   position: relative;
   flex: 1;
-  max-width: 480px;
+  max-width: 460px;
 }
 
 .search-icon {
@@ -74,75 +163,279 @@ function onSearch() {
   left: var(--space-3);
   top: 50%;
   transform: translateY(-50%);
-  color: var(--color-muted);
+  color: var(--color-text-tertiary);
   display: flex;
+  pointer-events: none;
 }
 
 .search-input {
   width: 100%;
-  height: 40px;
-  padding: 0 var(--space-4) 0 2.5rem;
+  height: 38px;
+  padding: 0 var(--space-10) 0 2.25rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-full);
   background-color: var(--color-surface-raised);
-  font-size: var(--font-size-sm);
+  font-size: var(--text-sm);
   color: var(--color-text);
   outline: none;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast),
+              background-color var(--transition-fast);
 }
 
 .search-input::placeholder {
-  color: var(--color-muted);
+  color: var(--color-text-tertiary);
 }
 
 .search-input:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  box-shadow: var(--shadow-focus);
   background-color: var(--color-surface);
 }
 
+/* Hide the native clear button */
+.search-input::-webkit-search-cancel-button { display: none; }
+
+.search-shortcut {
+  position: absolute;
+  right: var(--space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: var(--text-xs);
+  font-family: var(--font-sans);
+  color: var(--color-text-tertiary);
+  background: var(--color-surface-overlay);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 1px 6px;
+  pointer-events: none;
+}
+
+/* Right actions */
 .topbar-actions {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
-.btn-add {
+/* Primary button */
+.btn-primary {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  height: 36px;
   padding: 0 var(--space-4);
-  height: 38px;
   background-color: var(--color-primary);
   color: white;
-  border: none;
   border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.15s;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  white-space: nowrap;
+  transition: background-color var(--transition-fast);
 }
 
-.btn-add:hover {
+.btn-primary:hover {
   background-color: var(--color-primary-hover);
 }
 
+/* Icon button */
 .icon-btn {
-  width: 38px;
-  height: 38px;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: none;
-  border: 1px solid var(--color-border);
+  width: 36px;
+  height: 36px;
   border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
   color: var(--color-text-secondary);
-  cursor: pointer;
-  transition: background-color 0.15s, color 0.15s;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
 .icon-btn:hover {
   background-color: var(--color-surface-overlay);
   color: var(--color-text);
+}
+
+.notif-dot {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-error);
+  border: 2px solid var(--color-surface);
+}
+
+/* Profile */
+.profile-wrapper {
+  position: relative;
+}
+
+.profile-trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 36px;
+  padding: 0 var(--space-2) 0 var(--space-1);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  transition: background-color var(--transition-fast);
+}
+
+.profile-trigger:hover {
+  background-color: var(--color-surface-raised);
+}
+
+.profile-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--indigo-500), var(--indigo-700));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: var(--font-bold);
+  color: white;
+  flex-shrink: 0;
+}
+
+.profile-name {
+  max-width: 110px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-chevron {
+  display: flex;
+  color: var(--color-text-tertiary);
+  transition: transform var(--transition-fast);
+}
+
+.profile-chevron--open {
+  transform: rotate(180deg);
+}
+
+/* Dropdown */
+.profile-dropdown {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  width: 220px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  z-index: var(--z-dropdown);
+}
+
+.dropdown-header {
+  padding: var(--space-4) var(--space-4) var(--space-3);
+}
+
+.dropdown-user-name {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+  line-height: var(--leading-tight);
+}
+
+.dropdown-user-email {
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+  margin-top: 2px;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--color-border-subtle);
+  margin: var(--space-1) 0;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  text-align: left;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.dropdown-item:hover {
+  background-color: var(--color-surface-raised);
+  color: var(--color-text);
+}
+
+.dropdown-item--danger:hover {
+  background-color: var(--color-error-bg);
+  color: var(--color-error);
+}
+
+/* Last item padding fix */
+.dropdown-item:last-child {
+  margin-bottom: var(--space-1);
+}
+
+/* Dropdown transition */
+.dropdown-enter-active,
+.dropdown-leave-active {
+  transition: opacity var(--duration-fast) var(--ease-out),
+              transform var(--duration-fast) var(--ease-out);
+}
+
+.dropdown-enter-from,
+.dropdown-leave-to {
+  opacity: 0;
+  transform: translateY(-6px) scale(0.97);
+}
+
+/* Responsive — mobile */
+@media (max-width: 768px) {
+  .topbar {
+    padding: 0 var(--space-4);
+  }
+
+  .mobile-menu-btn {
+    display: flex;
+  }
+
+  .search-shortcut {
+    display: none;
+  }
+
+  .profile-name {
+    display: none;
+  }
+
+  .profile-chevron {
+    display: none;
+  }
+
+  .profile-trigger {
+    border: none;
+    padding: 0;
+    border-radius: var(--radius-full);
+  }
+
+  .btn-primary span {
+    display: none;
+  }
+
+  .btn-primary {
+    width: 36px;
+    padding: 0;
+    justify-content: center;
+  }
 }
 </style>
