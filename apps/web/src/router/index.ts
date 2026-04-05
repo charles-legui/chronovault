@@ -40,6 +40,12 @@ const router = createRouter({
         },
       ],
     },
+    // Media viewer — full-screen, no sidebar layout
+    {
+      path: '/albums/:albumId/media/:mediaId',
+      name: 'media-viewer',
+      component: () => import('@/views/MediaViewerView.vue'),
+    },
   ],
 })
 
