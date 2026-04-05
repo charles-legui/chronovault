@@ -1,0 +1,60 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - .:/workspace:cached
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      MONGO_URI: mongodb://mongo:27017/chronovault
+      POSTGRES_URL: postgresql://chronovault:secret@postgres:5432/chronovault
+    ports:
+      - "3000:3000"   # web dev server
+      - "4000:4000"   # api dev server
+    depends_on:
+      mongo:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    command: sleep infinity
+    networks:
+      - chronovault
+
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - chronovault
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: chronovault
+      POSTGRES_USER: chronovault
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chronovault -d chronovault"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - chronovault
+
+volumes:
+  mongo_data:
+  postgres_data:
+
+networks:
+  chronovault:
+    driver: bridge

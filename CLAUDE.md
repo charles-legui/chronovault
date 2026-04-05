@@ -72,3 +72,14 @@ The project is built incrementally — see `SPEC.md` section 3 for the full road
 3. Mock data layer (typed mocks, Pinia stores, realistic navigation)
 4. Backend GraphQL API (schema, resolvers, CRUD)
 5. Real database integration (MongoDB + PostgreSQL)
+
+## Devcontainer rule
+
+When asked to generate Devcontainer setup:
+
+- always generate full working configuration
+- include docker-compose if databases are required
+- install pnpm globally
+- ensure Node LTS
+- include VS Code extensions
+- keep configuration minimal and clean
