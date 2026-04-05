@@ -3,21 +3,9 @@
 
 <template>
   <div>
-    <h1 class="page-title">Dashboard</h1>
-    <p class="page-subtitle">Bienvenue sur ChronoVault</p>
+    <header class="page-header">
+      <h1 class="page-title">Dashboard</h1>
+      <p class="page-subtitle">Bienvenue sur ChronoVault</p>
+    </header>
   </div>
 </template>
-
-<style scoped>
-.page-title {
-  font-size: var(--font-size-2xl);
-  font-weight: 700;
-  color: var(--color-text);
-  margin: 0 0 var(--space-2);
-}
-.page-subtitle {
-  font-size: var(--font-size-base);
-  color: var(--color-text-secondary);
-  margin: 0;
-}
-</style>
