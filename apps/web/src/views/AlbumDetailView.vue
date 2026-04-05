@@ -282,6 +282,10 @@ function dateRange(album: { createdAt: string; updatedAt: string }): string {
           :selected="selected.has(item.id)"
           @click="router.push(`/albums/${album.id}/media/${item.id}`)"
           @select="toggleSelect"
+          @download="(id) => console.log('download', id)"
+          @favorite="(id) => console.log('favorite', id)"
+          @rename="(id) => console.log('rename', id)"
+          @delete="(id) => console.log('delete', id)"
         />
       </section>
 
