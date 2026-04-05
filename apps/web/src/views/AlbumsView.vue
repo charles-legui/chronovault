@@ -99,7 +99,12 @@ function openAlbum(id: string) {
         <AlbumCard
           v-for="album in filtered"
           :key="album.id"
-          :album="album"
+          :id="album.id"
+          :title="album.title"
+          :cover-url="album.coverUrl"
+          :media-count="album.mediaCount"
+          :updated-at="album.updatedAt"
+          :is-shared="album.isShared"
           @click="openAlbum"
         />
       </section>
