@@ -21,3 +21,15 @@ export interface PublicUser {
   role: UserRole;
   createdAt: Date;
 }
+
+export interface CreateUserInput {
+  email: string;
+  displayName: string;
+  passwordHash: string;
+  role?: UserRole;
+}
+
+export interface UpdateUserInput {
+  displayName?: string;
+  email?: string;
+}

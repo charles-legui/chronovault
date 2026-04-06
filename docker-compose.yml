@@ -1,5 +1,6 @@
 services:
   app:
+    container_name: chronovault-app
     build:
       context: .
       dockerfile: .devcontainer/Dockerfile
@@ -7,8 +8,8 @@ services:
       - .:/workspace:cached
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      MONGO_URI: mongodb://mongo:27017/chronovault
-      POSTGRES_URL: postgresql://chronovault:secret@postgres:5432/chronovault
+      MONGO_URI: ${MONGO_URI}
+      POSTGRES_URL: ${POSTGRES_URL}
     ports:
       - "3000:3000"   # web dev server
     depends_on:
@@ -21,6 +22,7 @@ services:
       - chronovault
 
   api:
+    container_name: chronovault-api
     build:
       context: .
       dockerfile: apps/api/Dockerfile
@@ -31,15 +33,16 @@ services:
     ports:
       - "4000:4000"
     environment:
-      NODE_ENV: development
-      MONGO_URI: mongodb://mongo:27017/chronovault
-      MONGO_DB_NAME: chronovault
-      POSTGRES_URL: postgresql://chronovault:secret@postgres:5432/chronovault
-      JWT_SECRET: dev-jwt-secret-do-not-use-in-production
-      JWT_EXPIRES_IN: 7d
-      PASSWORD_RESET_TOKEN_TTL_MINUTES: "30"
-      APP_BASE_URL: http://localhost:3000
-      MAIL_FROM: noreply@chronovault.local
+      NODE_ENV: ${NODE_ENV}
+      PORT: ${PORT}
+      MONGO_URI: ${MONGO_URI}
+      MONGO_DB_NAME: ${MONGO_DB_NAME}
+      POSTGRES_URL: ${POSTGRES_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+      PASSWORD_RESET_TOKEN_TTL_MINUTES: ${PASSWORD_RESET_TOKEN_TTL_MINUTES}
+      APP_BASE_URL: ${APP_BASE_URL}
+      MAIL_FROM: ${MAIL_FROM}
     depends_on:
       mongo:
         condition: service_healthy
@@ -49,6 +52,7 @@ services:
       - chronovault
 
   mongo:
+    container_name: chronovault-mongo
     image: mongo:7
     restart: unless-stopped
     volumes:
@@ -62,16 +66,17 @@ services:
       - chronovault
 
   postgres:
+    container_name: chronovault-postgres
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: chronovault
-      POSTGRES_USER: chronovault
-      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U chronovault -d chronovault"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5

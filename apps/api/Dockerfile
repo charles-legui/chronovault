@@ -11,11 +11,11 @@ WORKDIR /workspace
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY apps/api/package.json ./apps/api/
 
-# Install api dependencies only
-RUN pnpm install --filter @chronovault/api --frozen-lockfile
+# --no-frozen-lockfile: allows installing without a fully in-sync lockfile during development
+RUN pnpm install --filter @chronovault/api --no-frozen-lockfile
 
 WORKDIR /workspace/apps/api
 
 EXPOSE 4000
 
-CMD ["pnpm", "dev"]
+CMD ["sh", "-c", "pnpm install --no-frozen-lockfile --config.confirmModulesPurge=false && pnpm dev"]

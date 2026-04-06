@@ -4,11 +4,14 @@
   "service": "app",
   "workspaceFolder": "/workspace",
 
-  "postCreateCommand": "pnpm install",
+  "postStartCommand": "pnpm install",
 
   "remoteEnv": {
+    "NODE_ENV": "development",
     "MONGO_URI": "mongodb://mongo:27017/chronovault",
-    "POSTGRES_URL": "postgresql://chronovault:secret@postgres:5432/chronovault"
+    "MONGO_DB_NAME": "chronovault",
+    "POSTGRES_URL": "postgresql://chronovault:secret@postgres:5432/chronovault",
+    "JWT_SECRET": "dev-jwt-secret-do-not-use-in-production"
   },
 
   "customizations": {

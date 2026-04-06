@@ -1,11 +1,28 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
+import { useAuthStore } from '@/stores/authStore'
 import AppIcon from '@/components/ui/AppIcon.vue'
 
 const route  = useRoute()
 const router = useRouter()
 const ui     = useUiStore()
+const auth   = useAuthStore()
+
+const initials = computed(() => {
+  const name = auth.user?.displayName ?? ''
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(w => w[0].toUpperCase())
+    .join('')
+})
+
+const roleLabel = computed(() =>
+  auth.user?.role === 'admin' ? 'Administrator' : 'Member'
+)
 
 const navMain = [
   { label: 'Dashboard', to: '/',        icon: 'dashboard' },
@@ -83,12 +100,12 @@ function navigate(to: string) {
 
     <!-- User footer -->
     <div class="sidebar-user">
-      <div class="user-avatar" aria-hidden="true">JD</div>
+      <div class="user-avatar" aria-hidden="true">{{ initials }}</div>
       <div class="user-info">
-        <p class="user-name">Jean Dupont</p>
-        <p class="user-role">Administrateur</p>
+        <p class="user-name">{{ auth.user?.displayName }}</p>
+        <p class="user-role">{{ roleLabel }}</p>
       </div>
-      <button type="button" class="user-logout" title="Se déconnecter" aria-label="Se déconnecter">
+      <button type="button" class="user-logout" title="Sign out" aria-label="Sign out" @click="auth.signOut()">
         <AppIcon name="logout" :size="16" />
       </button>
     </div>

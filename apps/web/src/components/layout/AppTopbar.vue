@@ -1,12 +1,24 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useUiStore } from '@/stores/ui'
+import { useAuthStore } from '@/stores/authStore'
 import AppIcon from '@/components/ui/AppIcon.vue'
 
 const ui            = useUiStore()
+const auth          = useAuthStore()
 const localSearch   = ref(ui.searchQuery)
 const profileOpen   = ref(false)
 const profileRef    = ref<HTMLElement | null>(null)
+
+const initials = computed(() => {
+  const name = auth.user?.displayName ?? ''
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(w => w[0].toUpperCase())
+    .join('')
+})
 
 function onSearch() {
   ui.setSearch(localSearch.value)
@@ -84,8 +96,8 @@ onUnmounted(() => document.removeEventListener('mousedown', onClickOutside))
           aria-haspopup="menu"
           @click="toggleProfile"
         >
-          <div class="profile-avatar" aria-hidden="true">JD</div>
-          <span class="profile-name">Jean Dupont</span>
+          <div class="profile-avatar" aria-hidden="true">{{ initials }}</div>
+          <span class="profile-name">{{ auth.user?.displayName }}</span>
           <span class="profile-chevron" :class="{ 'profile-chevron--open': profileOpen }">
             <AppIcon name="chevron-down" :size="14" />
           </span>
@@ -95,8 +107,8 @@ onUnmounted(() => document.removeEventListener('mousedown', onClickOutside))
         <Transition name="dropdown">
           <div v-if="profileOpen" class="profile-dropdown" role="menu">
             <div class="dropdown-header">
-              <p class="dropdown-user-name">Jean Dupont</p>
-              <p class="dropdown-user-email">jean@example.com</p>
+              <p class="dropdown-user-name">{{ auth.user?.displayName }}</p>
+              <p class="dropdown-user-email">{{ auth.user?.email }}</p>
             </div>
             <div class="dropdown-divider" />
             <button type="button" class="dropdown-item" role="menuitem" @click="closeProfile">
@@ -108,9 +120,9 @@ onUnmounted(() => document.removeEventListener('mousedown', onClickOutside))
               <span>Paramètres</span>
             </button>
             <div class="dropdown-divider" />
-            <button type="button" class="dropdown-item dropdown-item--danger" role="menuitem" @click="closeProfile">
+            <button type="button" class="dropdown-item dropdown-item--danger" role="menuitem" @click="auth.signOut()">
               <AppIcon name="logout" :size="15" />
-              <span>Se déconnecter</span>
+              <span>Sign out</span>
             </button>
           </div>
         </Transition>

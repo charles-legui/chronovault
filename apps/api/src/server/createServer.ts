@@ -5,8 +5,11 @@ import { resolvers } from '../schema/resolvers.js';
 import { buildContext } from './context.js';
 import type { AppContext } from '../types/context.js';
 import { env, isDev } from '../config/env.js';
+import { connectMongo } from '../db/mongo/client.js';
 
 export async function createServer(): Promise<void> {
+  await connectMongo();
+
   const server = new ApolloServer<AppContext>({
     typeDefs,
     resolvers,
