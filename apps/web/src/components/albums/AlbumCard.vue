@@ -2,35 +2,25 @@
 import { ref } from 'vue'
 import { useRelativeDate } from '@/composables/useRelativeDate'
 import AppIcon from '@/components/ui/AppIcon.vue'
+import type { Album } from '@/types/albums'
 
 const props = defineProps<{
-  id:         string
-  title:      string
-  coverUrl?:  string
-  mediaCount: number
-  updatedAt:  string
-  isShared:   boolean
+  album: Album
 }>()
 
 const emit = defineEmits<{
   click:  [id: string]
-  open:   [id: string]
-  rename: [id: string]
-  share:  [id: string]
+  edit:   [id: string]
   delete: [id: string]
 }>()
 
-const { relativeDate } = useRelativeDate()
+const { relativeDate, shortDate } = useRelativeDate()
 
 const menuOpen = ref(false)
 const menuRef  = ref<HTMLElement | null>(null)
 
-function formatCount(n: number): string {
-  return new Intl.NumberFormat('fr').format(n)
-}
-
 function onCardClick() {
-  if (!menuOpen.value) emit('click', props.id)
+  if (!menuOpen.value) emit('click', props.album.id)
 }
 
 function toggleMenu(e: MouseEvent) {
@@ -38,21 +28,16 @@ function toggleMenu(e: MouseEvent) {
   menuOpen.value = !menuOpen.value
 }
 
-function closeMenu() {
-  menuOpen.value = false
-}
-
-function menuAction(event: string, e: MouseEvent) {
-  e.stopPropagation()
-  emit(event as 'open' | 'rename' | 'share' | 'delete', props.id)
-  menuOpen.value = false
-}
-
-// Close on outside click via focusout
 function onMenuFocusOut(e: FocusEvent) {
   if (!menuRef.value?.contains(e.relatedTarget as Node)) {
     menuOpen.value = false
   }
+}
+
+function menuAction(action: 'edit' | 'delete', e: MouseEvent) {
+  e.stopPropagation()
+  menuOpen.value = false
+  emit(action, props.album.id)
 }
 </script>
 
@@ -60,19 +45,17 @@ function onMenuFocusOut(e: FocusEvent) {
   <article
     class="album-card"
     tabindex="0"
-    :aria-label="`Album : ${title}`"
+    :aria-label="`Album : ${album.title}`"
     @click="onCardClick"
-    @keydown.enter="emit('click', id)"
-    @keydown.space.prevent="emit('click', id)"
+    @keydown.enter="emit('click', album.id)"
+    @keydown.space.prevent="emit('click', album.id)"
   >
-    <!-- ── Cover ─────────────────────────────────── -->
+    <!-- Cover -->
     <div class="cover">
-
-      <!-- Image or placeholder -->
       <img
-        v-if="coverUrl"
-        :src="coverUrl"
-        :alt="''"
+        v-if="album.coverImageUrl"
+        :src="album.coverImageUrl"
+        alt=""
         class="cover-img"
         loading="lazy"
         draggable="false"
@@ -81,27 +64,23 @@ function onMenuFocusOut(e: FocusEvent) {
         <AppIcon name="albums" :size="40" />
       </div>
 
-      <!-- Bottom gradient -->
       <div class="cover-gradient" aria-hidden="true" />
 
-      <!-- Shared badge ── top left -->
+      <!-- Event date badge -->
       <span
-        v-if="isShared"
-        class="badge badge--shared"
-        title="Album partagé"
-        aria-label="Album partagé"
+        v-if="album.eventDate"
+        class="badge badge--date"
+        :title="`Événement : ${shortDate(album.eventDate)}`"
       >
         <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor"
-             stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
-          <circle cx="18" cy="5"  r="3"/>
-          <circle cx="6"  cy="12" r="3"/>
-          <circle cx="18" cy="19" r="3"/>
-          <path d="m8.59 13.51 6.83 3.98M15.41 6.51l-6.82 3.98"/>
+             stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="18" rx="2"/>
+          <path d="M16 2v4M8 2v4M3 10h18"/>
         </svg>
-        Partagé
+        {{ shortDate(album.eventDate) }}
       </span>
 
-      <!-- Actions menu button ── top right -->
+      <!-- Actions menu -->
       <div
         ref="menuRef"
         class="menu-wrapper"
@@ -110,7 +89,7 @@ function onMenuFocusOut(e: FocusEvent) {
         <button
           type="button"
           class="btn-menu"
-          :aria-label="`Actions pour l'album ${title}`"
+          :aria-label="`Actions pour l'album ${album.title}`"
           :aria-expanded="menuOpen"
           aria-haspopup="menu"
           @click="toggleMenu"
@@ -124,15 +103,13 @@ function onMenuFocusOut(e: FocusEvent) {
 
         <Transition name="menu">
           <div v-if="menuOpen" class="dropdown" role="menu">
-            <button class="dropdown-item" role="menuitem" @click="menuAction('open',   $event)">
-              <AppIcon name="albums"   :size="14" /> Ouvrir
+            <button class="dropdown-item" role="menuitem"
+                    @click.stop="emit('click', album.id); menuOpen = false">
+              <AppIcon name="albums" :size="14" /> Ouvrir
             </button>
-            <button class="dropdown-item" role="menuitem" @click="menuAction('rename', $event)">
-              <AppIcon name="settings" :size="14" /> Renommer
-            </button>
-            <button class="dropdown-item" role="menuitem" @click="menuAction('share',  $event)">
-              <AppIcon name="heart"    :size="14" />
-              {{ isShared ? 'Arrêter le partage' : 'Partager' }}
+            <button class="dropdown-item" role="menuitem"
+                    @click="menuAction('edit', $event)">
+              <AppIcon name="settings" :size="14" /> Modifier
             </button>
             <div class="dropdown-divider" />
             <button class="dropdown-item dropdown-item--danger" role="menuitem"
@@ -146,56 +123,47 @@ function onMenuFocusOut(e: FocusEvent) {
           </div>
         </Transition>
       </div>
-
-      <!-- Media count pill ── bottom right (on cover) -->
-      <span class="cover-count" aria-hidden="true">
-        {{ formatCount(mediaCount) }}
-        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor"
-             stroke-width="2" aria-hidden="true">
-          <rect x="3" y="3" width="18" height="18" rx="2"/>
-          <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/>
-          <path d="m21 15-5-5L5 21"/>
-        </svg>
-      </span>
     </div>
 
-    <!-- ── Body ──────────────────────────────────── -->
+    <!-- Body -->
     <div class="body">
-      <h3 class="album-title">{{ title }}</h3>
+      <h3 class="album-title">{{ album.title }}</h3>
 
-      <div class="album-meta">
-        <span class="meta-count">
-          {{ formatCount(mediaCount) }}&thinsp;élément{{ mediaCount !== 1 ? 's' : '' }}
-        </span>
-        <span class="meta-dot" aria-hidden="true">·</span>
-        <time
-          class="meta-date"
-          :datetime="updatedAt"
-          :title="`Mis à jour le ${new Date(updatedAt).toLocaleDateString('fr')}`"
-        >
-          {{ relativeDate(updatedAt) }}
-        </time>
+      <p v-if="album.description" class="album-description">{{ album.description }}</p>
+
+      <!-- Tags -->
+      <div v-if="album.tags.length > 0" class="tags">
+        <span v-for="tag in album.tags.slice(0, 4)" :key="tag" class="tag">{{ tag }}</span>
+        <span v-if="album.tags.length > 4" class="tag tag--more">+{{ album.tags.length - 4 }}</span>
       </div>
+
+      <time
+        class="album-date"
+        :datetime="album.updatedAt"
+        :title="`Mis à jour le ${new Date(album.updatedAt).toLocaleDateString('fr')}`"
+      >
+        {{ relativeDate(album.updatedAt) }}
+      </time>
     </div>
   </article>
 </template>
 
 <style scoped>
-/* ── Card shell ───────────────────────────────────���──── */
+/* Card shell */
 .album-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
-  overflow: visible;          /* allow dropdown to overflow */
+  overflow: visible;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   outline: none;
   box-shadow: var(--shadow-sm);
   transition:
-    box-shadow  var(--transition-base),
-    transform   var(--transition-base),
-    border-color var(--transition-base);
+    box-shadow    var(--transition-base),
+    transform     var(--transition-base),
+    border-color  var(--transition-base);
 }
 
 .album-card:hover {
@@ -209,7 +177,7 @@ function onMenuFocusOut(e: FocusEvent) {
   border-color: var(--color-primary);
 }
 
-/* ── Cover ──────────────────────────────────────��────── */
+/* Cover */
 .cover {
   position: relative;
   aspect-ratio: 3 / 2;
@@ -243,16 +211,12 @@ function onMenuFocusOut(e: FocusEvent) {
 .cover-gradient {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    to bottom,
-    rgba(0,0,0,0)   40%,
-    rgba(0,0,0,0.52) 100%
-  );
+  background: linear-gradient(to bottom, rgba(0,0,0,0) 40%, rgba(0,0,0,0.45) 100%);
   pointer-events: none;
   border-radius: inherit;
 }
 
-/* Badges & pills ─ shared positioning */
+/* Event date badge */
 .badge {
   position: absolute;
   top: var(--space-3);
@@ -260,7 +224,7 @@ function onMenuFocusOut(e: FocusEvent) {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px var(--space-2) 3px var(--space-2);
+  padding: 3px var(--space-2);
   border-radius: var(--radius-full);
   font-size: var(--text-xs);
   font-weight: var(--font-semibold);
@@ -268,33 +232,14 @@ function onMenuFocusOut(e: FocusEvent) {
   white-space: nowrap;
 }
 
-.badge--shared {
+.badge--date {
   background: rgba(255, 255, 255, 0.90);
   backdrop-filter: blur(8px);
   color: var(--color-text);
   box-shadow: var(--shadow-xs);
 }
 
-/* Cover count ── bottom right */
-.cover-count {
-  position: absolute;
-  bottom: var(--space-3);
-  right: var(--space-3);
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px var(--space-2);
-  background: rgba(0, 0, 0, 0.48);
-  backdrop-filter: blur(6px);
-  border-radius: var(--radius-full);
-  font-size: var(--text-xs);
-  font-weight: var(--font-medium);
-  color: white;
-  line-height: 1;
-  pointer-events: none;
-}
-
-/* ── Actions menu ──���─────────────────────────────────── */
+/* Actions menu */
 .menu-wrapper {
   position: absolute;
   top: var(--space-3);
@@ -314,20 +259,15 @@ function onMenuFocusOut(e: FocusEvent) {
   justify-content: center;
   opacity: 0;
   box-shadow: var(--shadow-xs);
-  transition:
-    opacity   var(--transition-fast),
-    background var(--transition-fast);
+  transition: opacity var(--transition-fast), background var(--transition-fast);
 }
 
-/* Show on card hover OR when menu is already open */
 .album-card:hover .btn-menu,
 .album-card:focus-within .btn-menu {
   opacity: 1;
 }
 
-.btn-menu:hover {
-  background: white;
-}
+.btn-menu:hover { background: white; }
 
 .btn-menu:focus-visible {
   opacity: 1;
@@ -340,7 +280,7 @@ function onMenuFocusOut(e: FocusEvent) {
   position: absolute;
   top: calc(100% + var(--space-1));
   right: 0;
-  min-width: 172px;
+  min-width: 160px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
@@ -377,7 +317,6 @@ function onMenuFocusOut(e: FocusEvent) {
   margin: var(--space-1) 0;
 }
 
-/* Dropdown transition */
 .menu-enter-active,
 .menu-leave-active {
   transition: opacity var(--duration-fast) var(--ease-out),
@@ -390,7 +329,7 @@ function onMenuFocusOut(e: FocusEvent) {
   transform-origin: top right;
 }
 
-/* ── Body ────────────────────────────────────────��───── */
+/* Body */
 .body {
   padding: var(--space-4);
   display: flex;
@@ -403,31 +342,46 @@ function onMenuFocusOut(e: FocusEvent) {
   font-weight: var(--font-semibold);
   color: var(--color-text);
   line-height: var(--leading-snug);
-  letter-spacing: var(--tracking-tight);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.album-meta {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
+.album-description {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.meta-count {
+/* Tags */
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.tag {
+  display: inline-block;
+  padding: 2px var(--space-2);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+  border-radius: var(--radius-full);
   font-size: var(--text-xs);
   font-weight: var(--font-medium);
-  color: var(--color-text-secondary);
+  line-height: var(--leading-tight);
+  white-space: nowrap;
 }
 
-.meta-dot {
-  font-size: var(--text-xs);
+.tag--more {
+  background: var(--color-surface-raised);
   color: var(--color-text-tertiary);
-  line-height: 1;
 }
 
-.meta-date {
+.album-date {
   font-size: var(--text-xs);
   color: var(--color-text-tertiary);
 }

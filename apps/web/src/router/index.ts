@@ -50,9 +50,19 @@ const router = createRouter({
           component: () => import('@/views/AlbumsView.vue'),
         },
         {
+          path: 'albums/new',
+          name: 'album-create',
+          component: () => import('@/views/AlbumCreateView.vue'),
+        },
+        {
           path: 'albums/:id',
           name: 'album-detail',
           component: () => import('@/views/AlbumDetailView.vue'),
+        },
+        {
+          path: 'albums/:id/edit',
+          name: 'album-edit',
+          component: () => import('@/views/AlbumEditView.vue'),
         },
         {
           path: 'favorites',
