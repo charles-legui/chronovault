@@ -11,13 +11,40 @@ services:
       POSTGRES_URL: postgresql://chronovault:secret@postgres:5432/chronovault
     ports:
       - "3000:3000"   # web dev server
-      - "4000:4000"   # api dev server
     depends_on:
       mongo:
         condition: service_healthy
       postgres:
         condition: service_healthy
     command: sleep infinity
+    networks:
+      - chronovault
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    volumes:
+      - .:/workspace:cached
+      - api_node_modules:/workspace/apps/api/node_modules
+    working_dir: /workspace/apps/api
+    ports:
+      - "4000:4000"
+    environment:
+      NODE_ENV: development
+      MONGO_URI: mongodb://mongo:27017/chronovault
+      MONGO_DB_NAME: chronovault
+      POSTGRES_URL: postgresql://chronovault:secret@postgres:5432/chronovault
+      JWT_SECRET: dev-jwt-secret-do-not-use-in-production
+      JWT_EXPIRES_IN: 7d
+      PASSWORD_RESET_TOKEN_TTL_MINUTES: "30"
+      APP_BASE_URL: http://localhost:3000
+      MAIL_FROM: noreply@chronovault.local
+    depends_on:
+      mongo:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
     networks:
       - chronovault
 
@@ -54,6 +81,7 @@ services:
 volumes:
   mongo_data:
   postgres_data:
+  api_node_modules:
 
 networks:
   chronovault:
