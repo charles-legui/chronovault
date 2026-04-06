@@ -1,6 +1,7 @@
 import { GraphQLScalarType, Kind } from 'graphql';
 import type { AppContext } from '../types/context.js';
 import { authResolvers } from '../modules/auth/auth.resolver.js';
+import { albumResolvers } from '../modules/albums/album.resolver.js';
 
 // DateTime scalar — serializes Date objects to ISO 8601 strings
 const DateTimeScalar = new GraphQLScalarType({
@@ -33,9 +34,11 @@ export const resolvers = {
   Query: {
     health: (_parent: unknown, _args: unknown, _ctx: AppContext): string => 'ok',
     ...authResolvers.Query,
+    ...albumResolvers.Query,
   },
 
   Mutation: {
     ...authResolvers.Mutation,
+    ...albumResolvers.Mutation,
   },
 };
